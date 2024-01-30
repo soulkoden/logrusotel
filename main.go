@@ -70,47 +70,44 @@ func (t *JaegerHook) Levels() []logrus.Level {
 
 func (t *JaegerHook) Fire(e *logrus.Entry) error {
 	span := trace.SpanFromContext(e.Context)
-	if span == nil {
+	if span == nil || !span.IsRecording() {
 		return nil
 	}
 
-	if !span.IsRecording() {
-		return nil
-	}
-
-	span.AddEvent(e.Message)
-
+	spanAttributes := make([]attribute.KeyValue, 0, len(e.Data))
 	for k, v := range e.Data {
 		switch v := v.(type) {
 		case bool:
-			span.SetAttributes(attribute.Bool(k, v))
+			spanAttributes = append(spanAttributes, attribute.Bool(k, v))
 		case []bool:
-			span.SetAttributes(attribute.BoolSlice(k, v))
+			spanAttributes = append(spanAttributes, attribute.BoolSlice(k, v))
 		case int:
-			span.SetAttributes(attribute.Int(k, v))
+			spanAttributes = append(spanAttributes, attribute.Int(k, v))
 		case []int:
-			span.SetAttributes(attribute.IntSlice(k, v))
+			spanAttributes = append(spanAttributes, attribute.IntSlice(k, v))
 		case int64:
-			span.SetAttributes(attribute.Int64(k, v))
+			spanAttributes = append(spanAttributes, attribute.Int64(k, v))
 		case []int64:
-			span.SetAttributes(attribute.Int64Slice(k, v))
+			spanAttributes = append(spanAttributes, attribute.Int64Slice(k, v))
 		case float64:
-			span.SetAttributes(attribute.Float64(k, v))
+			spanAttributes = append(spanAttributes, attribute.Float64(k, v))
 		case []float64:
-			span.SetAttributes(attribute.Float64Slice(k, v))
+			spanAttributes = append(spanAttributes, attribute.Float64Slice(k, v))
 		case string:
-			span.SetAttributes(attribute.String(k, v))
+			spanAttributes = append(spanAttributes, attribute.String(k, v))
 		case []string:
-			span.SetAttributes(attribute.StringSlice(k, v))
+			spanAttributes = append(spanAttributes, attribute.StringSlice(k, v))
 		case fmt.Stringer:
-			span.SetAttributes(attribute.String(k, v.String()))
+			spanAttributes = append(spanAttributes, attribute.String(k, v.String()))
 		case error:
 			span.SetStatus(codes.Error, v.Error())
 			span.RecordError(v)
 		default:
-			span.SetAttributes(attribute.String(k, spew.Sdump(v)))
+			spanAttributes = append(spanAttributes, attribute.String(k, spew.Sdump(v)))
 		}
 	}
+
+	span.AddEvent(e.Message, trace.WithAttributes(spanAttributes...))
 
 	return nil
 }
