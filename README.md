@@ -10,6 +10,7 @@ import (
     "strconv"
 
     "github.com/sirupsen/logrus"
+    "github.com/soulkoden/logrusotel"
 )
 
 func main() {
