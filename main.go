@@ -3,6 +3,7 @@ package logrusotel
 import (
 	"context"
 	"fmt"
+	"net"
 	"runtime"
 
 	"github.com/davecgh/go-spew/spew"
@@ -23,10 +24,18 @@ func NewTracerProvider(url, name string, debug bool) (*sdktrace.TracerProvider, 
 	var err error
 
 	if !debug {
-		exporter, err = oteljaeger.New(oteljaeger.WithCollectorEndpoint(oteljaeger.WithEndpoint(url)))
+		host, port, err := net.SplitHostPort(url)
+		if err != nil {
+			return nil, fmt.Errorf("failed to split host:port: %w", err)
+		}
+
+		exporter, err = oteljaeger.New(oteljaeger.WithAgentEndpoint(
+			oteljaeger.WithAgentHost(host),
+			oteljaeger.WithAgentPort(port)))
 	} else {
 		exporter, err = stdouttrace.New(stdouttrace.WithPrettyPrint())
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new jaeger exporter: %w", err)
 	}
