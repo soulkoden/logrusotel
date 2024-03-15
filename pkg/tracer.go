@@ -11,7 +11,7 @@ import (
 	"github.com/uber/jaeger-client-go/config"
 )
 
-func NewTracer() (opentracing.Tracer, io.Closer, error) {
+func NewTracer(queueSize int) (opentracing.Tracer, io.Closer, error) {
 	cfg := config.Configuration{
 		ServiceName: "coordinator",
 		Sampler: &config.SamplerConfig{
@@ -21,7 +21,7 @@ func NewTracer() (opentracing.Tracer, io.Closer, error) {
 		Reporter: &config.ReporterConfig{
 			LogSpans:           true,
 			LocalAgentHostPort: os.Getenv("JAEGER_AGENT_HOST_PORT"),
-			QueueSize:          100,
+			QueueSize:          queueSize,
 		},
 	}
 
@@ -33,8 +33,8 @@ func NewTracer() (opentracing.Tracer, io.Closer, error) {
 	return tracer, closer, nil
 }
 
-func MustTracerCloser() (opentracing.Tracer, io.Closer) {
-	tracer, closer, err := NewTracer()
+func MustTracerCloser(queueSize int) (opentracing.Tracer, io.Closer) {
+	tracer, closer, err := NewTracer(queueSize)
 	if err != nil {
 		slog.With("error", err).Error("failed to create tracer")
 	}
