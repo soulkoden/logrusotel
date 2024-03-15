@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 )
 
 func StartSpanWithContext(ctx context.Context, tracer opentracing.Tracer, operationName string) (context.Context, opentracing.Span) {
@@ -14,4 +15,10 @@ func StartSpanWithContext(ctx context.Context, tracer opentracing.Tracer, operat
 
 	span := tracer.StartSpan(operationName, spanOptions...)
 	return context.WithValue(ctx, TracerParentCtxValue, span), span
+}
+
+func SpanError(span opentracing.Span, err error) error {
+	span.SetTag("error", true)
+	span.LogFields(log.String("error", err.Error()))
+	return err
 }
